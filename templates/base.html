@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CRM System{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <!-- Modern Streamlit-Style Header -->
+    <header class="modern-header">
+        <div class="header-container">
+            <!-- Left: Logo & Brand -->
+            <div class="header-brand">
+                <a href="{{ url_for('main.index') }}" class="brand-link">
+                    <div class="brand-logo">📊</div>
+                    <div class="brand-text">
+                        <div class="brand-title">TGM CRM</div>
+                        <div class="brand-subtitle">Customer Intelligence</div>
+                    </div>
+                </a>
+            </div>
+            
+            <!-- Center: Navigation -->
+            <nav class="header-nav">
+                <a href="{{ url_for('main.index') }}" 
+                   class="nav-item {% if request.endpoint == 'main.index' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('customers.list') }}" 
+                   class="nav-item {% if request.endpoint and request.endpoint.startswith('customers') %}active{% endif %}">
+                    <i class="bi bi-people"></i>
+                    <span>Kunden</span>
+                </a>
+                <a href="{{ url_for('orders.list') }}" 
+                   class="nav-item {% if request.endpoint and request.endpoint.startswith('orders') %}active{% endif %}">
+                    <i class="bi bi-cart3"></i>
+                    <span>Orders</span>
+                </a>
+                <a href="{{ url_for('contacts.list') }}" 
+                   class="nav-item {% if request.endpoint and request.endpoint.startswith('contacts') %}active{% endif %}">
+                    <i class="bi bi-chat-dots"></i>
+                    <span>Interaktionen</span>
+                </a>
+                <a href="{{ url_for('reports.index') }}" 
+                   class="nav-item {% if request.endpoint and request.endpoint.startswith('reports') %}active{% endif %}">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Reports</span>
+                </a>
+            </nav>
+            
+            <!-- Right: Search & User -->
+            <div class="header-actions">
+                <!-- Quick Search -->
+                <div class="search-box">
+                    <form action="{{ url_for('main.search') }}" method="get" class="search-form">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" name="q" placeholder="Suche..." class="search-input">
+                    </form>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="action-btn" title="Neue Bestellung" onclick="window.location='{{ url_for('orders.new') }}'">
+                        <i class="bi bi-plus-circle"></i>
+                    </button>
+                    <button class="action-btn" title="Benachrichtigungen" onclick="toggleNotifications()">
+                        <i class="bi bi-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                </div>
+                
+                <!-- User Menu -->
+                <div class="user-menu">
+                    <button class="user-button" onclick="toggleUserMenu()">
+                        <div class="user-avatar">{{ current_user.name[0] }}</div>
+                        <div class="user-info">
+                            <div class="user-name">{{ current_user.name }}</div>
+                            <div class="user-role">{{ current_user.role }}</div>
+                        </div>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="{{ url_for('auth.profile') }}" class="dropdown-item">
+                            <i class="bi bi-person"></i>
+                            <span>Profil bearbeiten</span>
+                        </a>
+                        <a href="#" class="dropdown-item">
+                            <i class="bi bi-gear"></i>
+                            <span>Einstellungen</span>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ url_for('auth.logout') }}" class="dropdown-item logout">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Abmelden</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Notification Panel (Hidden by default) -->
+    <div class="notification-panel" id="notificationPanel">
+        <div class="notification-header">
+            <h3>Benachrichtigungen</h3>
+            <button onclick="toggleNotifications()" class="close-btn">&times;</button>
+        </div>
+        <div class="notification-list">
+            <div class="notification-item unread">
+                <div class="notification-icon" style="background: #ff4b4b;">📋</div>
+                <div class="notification-content">
+                    <div class="notification-title">5 offene Bestellungen</div>
+                    <div class="notification-time">vor 10 Minuten</div>
+                </div>
+            </div>
+            <div class="notification-item unread">
+                <div class="notification-icon" style="background: #ffa421;">⚠️</div>
+                <div class="notification-content">
+                    <div class="notification-title">3 Kunden riskieren Abwanderung</div>
+                    <div class="notification-time">vor 1 Stunde</div>
+                </div>
+            </div>
+            <div class="notification-item">
+                <div class="notification-icon" style="background: #09ab3b;">✅</div>
+                <div class="notification-content">
+                    <div class="notification-title">Bestellung #ORD-001 bezahlt</div>
+                    <div class="notification-time">vor 2 Stunden</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Flash Messages -->
+    <div class="container-fluid mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {% if category == 'success' %}
+                            <i class="bi bi-check-circle-fill"></i>
+                        {% elif category == 'danger' %}
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        {% elif category == 'warning' %}
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    
+    <!-- Main Content -->
+    <main class="{% if current_user.is_authenticated %}container-fluid{% endif %} {% if not current_user.is_authenticated %}py-5{% else %}py-3{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-light py-3 mt-5">
+        <div class="container-fluid text-center text-muted">
+            <small>
+                &copy; {{ now.year }} CRM System | TGM 5BHWII | 
+                <a href="http://buschberg.at/sgruber/crm/" target="_blank">Projektvorgabe</a>
+            </small>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // User Menu Toggle
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('show');
+        }
+        
+        // Notification Panel Toggle
+        function toggleNotifications() {
+            const panel = document.getElementById('notificationPanel');
+            panel.classList.toggle('show');
+        }
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const userMenu = document.querySelector('.user-menu');
+            const dropdown = document.getElementById('userDropdown');
+            
+            if (userMenu && !userMenu.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+            
+            const notificationPanel = document.getElementById('notificationPanel');
+            const notificationBtn = document.querySelector('.action-btn[title="Benachrichtigungen"]');
+            
+            if (notificationPanel && notificationBtn && 
+                !notificationPanel.contains(event.target) && 
+                !notificationBtn.contains(event.target)) {
+                notificationPanel.classList.remove('show');
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

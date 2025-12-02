@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}{{ customer.full_name }} - Kundendetails{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('customers.list') }}">Kunden</a></li>
+                <li class="breadcrumb-item active">{{ customer.full_name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6">
+                    <i class="bi bi-person-circle"></i> {{ customer.full_name }}
+                    <small class="text-muted">(Kund# {{ customer.id }})</small>
+                </h1>
+                <p class="lead">
+                    <i class="bi bi-envelope"></i> {{ customer.email or '—' }} &nbsp;
+                    <i class="bi bi-telephone"></i> {{ customer.phone or '—' }}
+                    {% if last_contact %}
+                        &nbsp; • &nbsp; Letzter Kontakt: {{ format_date(last_contact.contact_time) }} ({{ last_contact.channel }})
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('customers.edit', id=customer.id) }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Bearbeiten
+                </a>
+                <a href="{{ url_for('orders.new') }}?customer_id={{ customer.id }}" class="btn btn-success">
+                    <i class="bi bi-cart-plus"></i> Neue Bestellung
+                </a>
+                <a href="{{ url_for('contacts.new') }}?customer_id={{ customer.id }}" class="btn btn-info text-white">
+                    <i class="bi bi-chat-plus"></i> Neuer Kontakt
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h6 class="card-title">Umsatz gesamt</h6>
+                <h3 class="mb-0">{{ format_currency(revenue_total) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-title">Umsatz letztes Jahr (2024)</h6>
+                <h3 class="mb-0">{{ format_currency(revenue_last_year) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h6 class="card-title">Bestellungen</h6>
+                <h3 class="mb-0">{{ order_count }}</h3>
+                <small>Ø {{ format_currency(avg_order_value) }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h6 class="card-title">Interaktionen</h6>
+                <h3 class="mb-0">{{ contact_count }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Datumsbereich-Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Datumsbereich:</label>
+                <input type="date" class="form-control" name="from" value="{{ date_from }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <input type="date" class="form-control" name="to" value="{{ date_to }}">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-filter"></i> Anwenden
+                </button>
+                <a href="{{ url_for('customers.detail', id=customer.id) }}" class="btn btn-outline-secondary">
+                    Zurücksetzen
+                </a>
+            </div>
+            {% if revenue_period is not none %}
+            <div class="col-12">
+                <div class="alert alert-info mb-0">
+                    <strong>Umsatz im gewählten Zeitraum:</strong> {{ format_currency(revenue_period) }}
+                </div>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#orders-tab">
+            <i class="bi bi-cart"></i> Letzte Bestellungen
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#contacts-tab">
+            <i class="bi bi-chat-left-text"></i> Letzte Interaktionen
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stammdaten-tab">
+            <i class="bi bi-info-circle"></i> Stammdaten
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Letzte Bestellungen -->
+    <div class="tab-pane fade show active" id="orders-tab">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Bestell#</th>
+                        <th>Datum</th>
+                        <th>Positionen</th>
+                        <th>Status</th>
+                        <th class="text-end">Summe</th>
+                        <th class="text-end">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td><a href="{{ url_for('orders.detail', id=order.id) }}">{{ order.order_number }}</a></td>
+                        <td>{{ format_date(order.order_date) }}</td>
+                        <td>{{ order.items.count() }}</td>
+                        <td>
+                            {% if order.status == 'Offen' %}
+                                <span class="badge bg-warning text-dark">{{ order.status }}</span>
+                            {% elif order.status == 'Bezahlt' %}
+                                <span class="badge bg-success">Bez.</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ order.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-semibold">{{ format_currency(order.total_amount) }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('orders.detail', id=order.id) }}" class="btn btn-sm btn-outline-primary">
+                                Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            Noch keine Bestellungen
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Letzte Kontakte (Timeline) -->
+    <div class="tab-pane fade" id="contacts-tab">
+        <div class="timeline">
+            {% for contact in contacts %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">
+                                {% if contact.channel == 'Telefon' %}
+                                    <i class="bi bi-telephone text-primary"></i>
+                                {% elif contact.channel == 'E-Mail' %}
+                                    <i class="bi bi-envelope text-info"></i>
+                                {% elif contact.channel == 'Meeting' %}
+                                    <i class="bi bi-people text-success"></i>
+                                {% else %}
+                                    <i class="bi bi-chat text-secondary"></i>
+                                {% endif %}
+                                {{ contact.channel }}: {{ contact.subject or '(ohne Betreff)' }}
+                            </h6>
+                            <p class="card-text">
+                                {{ contact.notes or '' }}
+                            </p>
+                            <p class="small text-muted mb-0">
+                                {{ format_datetime(contact.contact_time) }} — 
+                                Mitarbeiter: {{ contact.user.name if contact.user else '—' }}
+                                {% if contact.duration_minutes %}
+                                    — Dauer: {{ contact.duration_minutes }} Min.
+                                {% endif %}
+                                {% if contact.rating and current_user.is_chef() %}
+                                    <br>
+                                    <span class="text-warning">
+                                        Bewertung: {% for i in range(contact.rating) %}★{% endfor %}
+                                    </span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('contacts.edit', id=contact.id) }}" class="btn btn-sm btn-outline-secondary">
+                                Bearbeiten
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                Noch keine Interaktionen erfasst
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Stammdaten -->
+    <div class="tab-pane fade" id="stammdaten-tab">
+        <div class="card">
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Name:</dt>
+                    <dd class="col-sm-9">{{ customer.full_name }}</dd>
+                    
+                    <dt class="col-sm-3">Firma:</dt>
+                    <dd class="col-sm-9">{{ customer.company or '—' }}</dd>
+                    
+                    <dt class="col-sm-3">E-Mail:</dt>
+                    <dd class="col-sm-9">{{ customer.email or '—' }}</dd>
+                    
+                    <dt class="col-sm-3">Telefon:</dt>
+                    <dd class="col-sm-9">{{ customer.phone or '—' }}</dd>
+                    
+                    <dt class="col-sm-3">Adresse:</dt>
+                    <dd class="col-sm-9">
+                        {{ customer.address or '—' }}<br>
+                        {{ customer.postal_code or '' }} {{ customer.city or '' }}<br>
+                        {{ customer.country or '' }}
+                    </dd>
+                    
+                    <dt class="col-sm-3">Notizen:</dt>
+                    <dd class="col-sm-9">{{ customer.notes or '—' }}</dd>
+                    
+                    <dt class="col-sm-3">Erstellt am:</dt>
+                    <dd class="col-sm-9">{{ format_datetime(customer.created_at) }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

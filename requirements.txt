@@ -1,0 +1,21 @@
+# CRM System - Requirements
+# Python 3.9+
+
+# Flask Core
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Database (SQLite - keine externe DB nötig)
+Flask-SQLAlchemy==3.1.1
+
+# Authentication
+Flask-Login==0.6.3
+
+# Date/Time utilities
+python-dateutil==2.8.2
+
+# Environment variables
+python-dotenv==1.0.0
+
+# For seeding test data
+Faker==21.0.0

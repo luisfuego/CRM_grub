@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Interaktionen - CRM System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-chat-left-text"></i> Interaktionen</h1>
+        <p class="text-muted">Alle Kundeninteraktionen chronologisch sortiert</p>
+    </div>
+    <div class="col text-end">
+        <a href="{{ url_for('contacts.new') }}" class="btn btn-info text-white">
+            <i class="bi bi-plus-circle"></i> Neue Interaktion
+        </a>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body py-2">
+                <small class="text-muted">Gesamt</small>
+                <h4>{{ stats.total }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-primary">
+            <div class="card-body py-2">
+                <small class="text-muted"><i class="bi bi-telephone"></i> Telefon</small>
+                <h4 class="text-primary">{{ stats.Telefon }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-info">
+            <div class="card-body py-2">
+                <small class="text-muted"><i class="bi bi-envelope"></i> E-Mail</small>
+                <h4 class="text-info">{{ stats['E-Mail'] }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-success">
+            <div class="card-body py-2">
+                <small class="text-muted"><i class="bi bi-people"></i> Meeting</small>
+                <h4 class="text-success">{{ stats.Meeting }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center border-secondary">
+            <div class="card-body py-2">
+                <small class="text-muted"><i class="bi bi-chat"></i> Chat</small>
+                <h4 class="text-secondary">{{ stats.Chat }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-6">
+                <input type="text" class="form-control" name="customer" placeholder="Suche nach Kunde..." value="{{ customer_filter }}">
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" name="channel">
+                    <option value="">Alle Kanäle</option>
+                    <option value="Telefon" {% if channel_filter=='Telefon' %}selected{% endif %}>Telefon</option>
+                    <option value="E-Mail" {% if channel_filter=='E-Mail' %}selected{% endif %}>E-Mail</option>
+                    <option value="Meeting" {% if channel_filter=='Meeting' %}selected{% endif %}>Meeting</option>
+                    <option value="Chat" {% if channel_filter=='Chat' %}selected{% endif %}>Chat</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" type="submit">
+                    <i class="bi bi-filter"></i> Filter
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Datum/Zeit</th>
+                        <th>Kunde</th>
+                        <th>Kanal</th>
+                        <th>Betreff</th>
+                        <th>Mitarbeiter</th>
+                        <th class="text-end">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contact in pagination.items %}
+                    <tr>
+                        <td class="small">
+                            {{ format_datetime(contact.contact_time) }}<br>
+                            <span class="text-muted">{{ time_ago(contact.contact_time) }}</span>
+                        </td>
+                        <td><a href="{{ url_for('customers.detail', id=contact.customer.id) }}">{{ contact.customer.display_name }}</a></td>
+                        <td>
+                            {% if contact.channel == 'Telefon' %}
+                                <span class="badge bg-primary"><i class="bi bi-telephone"></i> Telefon</span>
+                            {% elif contact.channel == 'E-Mail' %}
+                                <span class="badge bg-info"><i class="bi bi-envelope"></i> E-Mail</span>
+                            {% elif contact.channel == 'Meeting' %}
+                                <span class="badge bg-success"><i class="bi bi-people"></i> Meeting</span>
+                            {% else %}
+                                <span class="badge bg-secondary"><i class="bi bi-chat"></i> Chat</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ contact.subject or '—' }}
+                            {% if contact.rating and current_user.is_chef() %}
+                                <br><small class="text-warning">{% for i in range(contact.rating) %}★{% endfor %}</small>
+                            {% endif %}
+                        </td>
+                        <td class="small">{{ contact.user.name if contact.user else '—' }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('contacts.detail', id=contact.id) }}" class="btn btn-sm btn-primary">Details</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">Keine Interaktionen gefunden</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{% if customer %}Kunde bearbeiten{% else %}Neuer Kunde{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('customers.list') }}">Kunden</a></li>
+                <li class="breadcrumb-item active">{% if customer %}Bearbeiten{% else %}Neu{% endif %}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h3 class="mb-0">
+            {% if customer %}
+                <i class="bi bi-pencil"></i> Kunde bearbeiten
+            {% else %}
+                <i class="bi bi-plus-circle"></i> Neuer Kunde
+            {% endif %}
+        </h3>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Vorname *</label>
+                    <input type="text" class="form-control" name="first_name" 
+                           value="{{ customer.first_name if customer else '' }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Nachname *</label>
+                    <input type="text" class="form-control" name="last_name" 
+                           value="{{ customer.last_name if customer else '' }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Firma</label>
+                    <input type="text" class="form-control" name="company" 
+                           value="{{ customer.company if customer else '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">E-Mail</label>
+                    <input type="email" class="form-control" name="email" 
+                           value="{{ customer.email if customer else '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Telefon</label>
+                    <input type="text" class="form-control" name="phone" 
+                           value="{{ customer.phone if customer else '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Adresse</label>
+                    <input type="text" class="form-control" name="address" 
+                           value="{{ customer.address if customer else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">PLZ</label>
+                    <input type="text" class="form-control" name="postal_code" 
+                           value="{{ customer.postal_code if customer else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Stadt</label>
+                    <input type="text" class="form-control" name="city" 
+                           value="{{ customer.city if customer else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Land</label>
+                    <input type="text" class="form-control" name="country" 
+                           value="{{ customer.country if customer else 'Österreich' }}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Notizen</label>
+                    <textarea class="form-control" name="notes" rows="3">{{ customer.notes if customer else '' }}</textarea>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Speichern
+                    </button>
+                    <a href="{% if customer %}{{ url_for('customers.detail', id=customer.id) }}{% else %}{{ url_for('customers.list') }}{% endif %}" 
+                       class="btn btn-outline-secondary">
+                        Abbrechen
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

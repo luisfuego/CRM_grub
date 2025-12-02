@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Neue Bestellung - CRM System{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('orders.list') }}">Bestellungen</a></li>
+                <li class="breadcrumb-item active">Neue Bestellung</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h3 class="mb-0">
+            <i class="bi bi-plus-circle"></i> Neue Bestellung anlegen
+        </h3>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Kunde *</label>
+                    <select class="form-select" name="customer_id" required>
+                        <option value="">Bitte Kunde wählen...</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}">
+                            {{ customer.last_name }}, {{ customer.first_name }} 
+                            {% if customer.company %}({{ customer.company }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status" disabled>
+                        <option value="Offen" selected>Offen</option>
+                    </select>
+                    <small class="text-muted">Neue Bestellungen starten mit Status "Offen"</small>
+                </div>
+                
+                <div class="col-12">
+                    <label class="form-label">Notizen</label>
+                    <textarea class="form-control" name="notes" rows="3" placeholder="Optionale Bemerkungen zur Bestellung..."></textarea>
+                </div>
+                
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Nach dem Anlegen können Sie Positionen (Produkte) zur Bestellung hinzufügen.
+                    </div>
+                </div>
+                
+                <div class="col-12">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-save"></i> Bestellung anlegen
+                    </button>
+                    <a href="{{ url_for('orders.list') }}" class="btn btn-outline-secondary">
+                        Abbrechen
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

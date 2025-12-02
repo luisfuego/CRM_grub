@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Mein Profil - CRM System{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Mein Profil</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h4 class="mb-0"><i class="bi bi-person-circle"></i> Mein Profil</h4>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div style="width: 100px; height: 100px; background: var(--primary-color); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem;">
+                        {{ current_user.name[0] | upper }}
+                    </div>
+                </div>
+                
+                <table class="table">
+                    <tr>
+                        <th style="width: 40%;">Name</th>
+                        <td>{{ current_user.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>E-Mail</th>
+                        <td>{{ current_user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Rolle</th>
+                        <td>
+                            <span class="badge {% if current_user.role in ['Admin', 'Chef'] %}bg-danger{% else %}bg-secondary{% endif %}">
+                                {{ current_user.role }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Status</th>
+                        <td>
+                            {% if current_user.is_active %}
+                            <span class="badge bg-success">Aktiv</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inaktiv</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Registriert am</th>
+                        <td>{{ current_user.created_at.strftime('%d.%m.%Y') }}</td>
+                    </tr>
+                </table>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Profil bearbeiten
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h4 class="mb-0"><i class="bi bi-activity"></i> Meine Aktivität</h4>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h3 class="mb-0">{{ current_user.contacts.count() }}</h3>
+                            <small class="text-muted">Interaktionen erfasst</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h3 class="mb-0">{{ current_user.contacts.filter_by(channel='Telefon').count() }}</h3>
+                            <small class="text-muted">Telefonate</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded">
+                            <h3 class="mb-0">{{ current_user.contacts.filter_by(channel='E-Mail').count() }}</h3>
+                            <small class="text-muted">E-Mails</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded">
+                            <h3 class="mb-0">{{ current_user.contacts.filter_by(channel='Meeting').count() }}</h3>
+                            <small class="text-muted">Meetings</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

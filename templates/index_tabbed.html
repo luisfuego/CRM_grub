@@ -1,0 +1,520 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - TGM CRM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .icon-revenue { background-color: #d4f4dd; color: #09ab3b; }
+    .icon-customers { background-color: #d9e8f7; color: #0068c9; }
+    .icon-orders { background-color: #fff3cd; color: #e67e00; }
+    .icon-conversion { background-color: #f3e8ff; color: #8b5cf6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="st-container">
+    <!-- Header -->
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
+            📊 CRM Dashboard
+        </h1>
+        <p style="color: var(--text-secondary); font-size: 1rem;">
+            Willkommen zurück, {{ current_user.name }}! Hier ist deine Übersicht.
+        </p>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <button class="tab-button active" onclick="switchTab('overview')" id="tab-overview">
+            📊 Overview
+        </button>
+        <button class="tab-button" onclick="switchTab('customers')" id="tab-customers">
+            👥 Customers
+        </button>
+        <button class="tab-button" onclick="switchTab('sales')" id="tab-sales">
+            💰 Sales Pipeline
+        </button>
+        <button class="tab-button" onclick="switchTab('analytics')" id="tab-analytics">
+            📈 Analytics
+        </button>
+    </div>
+
+    <!-- TAB 1: Overview -->
+    <div id="content-overview" class="tab-content active">
+        <!-- Key Metrics Grid -->
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="icon-circle icon-revenue">💰</div>
+                <div class="metric-label">Gesamtumsatz</div>
+                <div class="metric-value">€{{ "{:,.2f}".format(stats.total_revenue) }}</div>
+                <div class="metric-delta positive">↑ 12.5% vs. Vormonat</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="icon-circle icon-customers">👥</div>
+                <div class="metric-label">Aktive Kunden</div>
+                <div class="metric-value">{{ stats.total_customers }}</div>
+                <div class="metric-delta positive">↑ {{ stats.new_customers_this_month }} neue im {{ now.strftime('%B') }}</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="icon-circle icon-orders">📦</div>
+                <div class="metric-label">Bestellungen</div>
+                <div class="metric-value">{{ stats.total_orders }}</div>
+                <div class="metric-delta">Ø €{{ "{:,.2f}".format(stats.avg_order_value) }} pro Bestellung</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="icon-circle icon-conversion">📈</div>
+                <div class="metric-label">Conversion Rate</div>
+                <div class="metric-value">{{ "%.1f"|format(stats.conversion_rate) }}%</div>
+                <div class="metric-delta {% if stats.conversion_rate > 25 %}positive{% else %}negative{% endif %}">
+                    {% if stats.conversion_rate > 25 %}↑{% else %}↓{% endif %} Target: 30%
+                </div>
+            </div>
+        </div>
+
+        <!-- Smart Recommendations -->
+        <div class="st-section" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border: none; color: white;">
+            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: white;">
+                🤖 Smart Recommendations
+            </h2>
+            
+            <div style="display: grid; gap: 0.75rem;">
+                {% for rec in recommendations %}
+                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 1rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="font-size: 2rem;">{{ rec.icon }}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; margin-bottom: 0.25rem;">{{ rec.title }}</div>
+                        <div style="font-size: 0.875rem; opacity: 0.9;">{{ rec.description }}</div>
+                    </div>
+                    <a href="{{ rec.action_url }}" style="background: rgba(255,255,255,0.3); padding: 0.5rem 1rem; border-radius: 6px; color: white; text-decoration: none; font-weight: 600; font-size: 0.875rem;">
+                        Aktion →
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recent Activity & Recent Orders -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+            <!-- Recent Activity -->
+            <div class="st-section">
+                <h2 class="st-section-title">🕒 Letzte Aktivitäten</h2>
+                
+                {% if recent_contacts %}
+                <div style="max-height: 400px; overflow-y: auto;">
+                    {% for contact in recent_contacts[:5] %}
+                    <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 1rem;">
+                        <div style="flex-shrink: 0;">
+                            <div class="customer-score {% if contact.rating and contact.rating >= 4 %}score-high{% elif contact.rating and contact.rating >= 3 %}score-medium{% else %}score-low{% endif %}">
+                                {% if contact.channel == 'Telefon' %}📞
+                                {% elif contact.channel == 'E-Mail' %}📧
+                                {% elif contact.channel == 'Meeting' %}🤝
+                                {% elif contact.channel == 'Chat' %}💬
+                                {% else %}📝{% endif %}
+                            </div>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--text-primary);">{{ contact.customer.full_name }}</div>
+                            <div style="font-size: 0.875rem; color: var(--text-secondary);">{{ contact.subject }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                {{ contact.contact_time.strftime('%d.%m.%Y %H:%M') }} Uhr
+                            </div>
+                        </div>
+                        {% if contact.rating %}
+                        <div style="flex-shrink: 0;">
+                            <span class="st-badge st-badge-{% if contact.rating >= 4 %}success{% elif contact.rating >= 3 %}warning{% else %}danger{% endif %}">
+                                ⭐ {{ contact.rating }}/5
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Keine Aktivitäten vorhanden</p>
+                {% endif %}
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="st-section">
+                <h2 class="st-section-title">📦 Letzte Bestellungen</h2>
+                
+                {% if recent_orders %}
+                <div style="max-height: 400px; overflow-y: auto;">
+                    {% for order in recent_orders[:5] %}
+                    <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: var(--primary-color);">{{ order.order_number }}</div>
+                            <div style="font-size: 0.875rem; color: var(--text-secondary);">{{ order.customer.full_name }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ order.order_date.strftime('%d.%m.%Y') }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; margin-bottom: 0.25rem;">€{{ "{:,.2f}".format(order.total_amount) }}</div>
+                            <span class="st-badge st-badge-{% if order.status == 'Bezahlt' %}success{% elif order.status == 'Offen' %}warning{% elif order.status == 'Storniert' %}danger{% else %}info{% endif %}">
+                                {{ order.status }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Keine Bestellungen vorhanden</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="st-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: white;">⚡ Quick Actions</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <a href="{{ url_for('customers.new') }}" class="st-button" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3);">➕ Neuer Kunde</a>
+                <a href="{{ url_for('orders.new') }}" class="st-button" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3);">🛒 Neue Bestellung</a>
+                <a href="{{ url_for('contacts.new') }}" class="st-button" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3);">📞 Kontakt loggen</a>
+                <a href="{{ url_for('customers.list') }}" class="st-button" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3);">👥 Alle Kunden</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: Customers -->
+    <div id="content-customers" class="tab-content">
+        <!-- Customer Lifecycle -->
+        <div class="st-section">
+            <h2 class="st-section-title">🎯 Customer Lifecycle</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <div class="lifecycle-stage lead">
+                    <span style="font-size: 1.5rem;">🌱</span>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">{{ lifecycle_stats.leads }}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8;">Leads</div>
+                    </div>
+                </div>
+                <div class="lifecycle-stage prospect">
+                    <span style="font-size: 1.5rem;">🎯</span>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">{{ lifecycle_stats.prospects }}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8;">Prospects</div>
+                    </div>
+                </div>
+                <div class="lifecycle-stage customer">
+                    <span style="font-size: 1.5rem;">✅</span>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">{{ lifecycle_stats.customers }}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8;">Active Customers</div>
+                    </div>
+                </div>
+                <div class="lifecycle-stage vip">
+                    <span style="font-size: 1.5rem;">⭐</span>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 700;">{{ lifecycle_stats.vip }}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.8;">VIP Customers</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Segmentation & Churn Risk -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <!-- Customer Segmentation -->
+            <div class="st-section">
+                <h2 class="st-section-title">🎯 Customer Segmentation</h2>
+                <div style="display: grid; gap: 0.75rem; margin-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #ffd700;">
+                        <div>
+                            <div style="font-weight: 700; color: var(--text-primary);">🏆 Champions</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Beste Kunden, höchster Wert</div>
+                        </div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">{{ segments.Champions }}</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #09ab3b;">
+                        <div>
+                            <div style="font-weight: 700; color: var(--text-primary);">💚 Loyal Customers</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Regelmäßige, treue Käufer</div>
+                        </div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">{{ segments.Loyal }}</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #0068c9;">
+                        <div>
+                            <div style="font-weight: 700; color: var(--text-primary);">🎯 Potential Customers</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Hoher Wert, Upselling-Chance</div>
+                        </div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">{{ segments.Potential }}</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffa421;">
+                        <div>
+                            <div style="font-weight: 700; color: #e67e00;">⚠️ At Risk</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Reaktivierung nötig</div>
+                        </div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #e67e00;">{{ segments['At Risk'] }}</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #ffe5e5; border-radius: 8px; border-left: 4px solid #ff2b2b;">
+                        <div>
+                            <div style="font-weight: 700; color: var(--danger-color);">💔 Lost Customers</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Lange inaktiv</div>
+                        </div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--danger-color);">{{ segments.Lost }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- At-Risk Customers -->
+            <div class="st-section">
+                <h2 class="st-section-title">🚨 Churn Risk Alert</h2>
+                {% if at_risk_customers %}
+                <div style="margin-top: 1rem;">
+                    {% for item in at_risk_customers %}
+                    <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">{{ item.customer.full_name }}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ item.customer.company or 'Privatkunde' }}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 700; color: var(--success-color); font-size: 1.125rem;">€{{ "{:,.0f}".format(item.total_revenue) }}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">Lifetime Value</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.75rem;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem;">
+                                    <span>Health Score</span>
+                                    <span style="font-weight: 600;">{{ item.health_score }}/100</span>
+                                </div>
+                                <div class="st-progress">
+                                    <div class="st-progress-bar" style="width: {{ item.health_score }}%; background-color: {% if item.health_score < 30 %}var(--danger-color){% elif item.health_score < 60 %}var(--warning-color){% else %}var(--success-color){% endif %};"></div>
+                                </div>
+                            </div>
+                            <span class="st-badge st-badge-{% if item.days_inactive > 90 %}danger{% else %}warning{% endif %}">{{ item.days_inactive }} Tage inaktiv</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                    <div style="font-weight: 600;">Alle Kunden sind aktiv!</div>
+                    <div style="font-size: 0.875rem; margin-top: 0.5rem;">Keine Abwanderungsrisiken erkannt</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Top Customers -->
+        <div class="st-section">
+            <h2 class="st-section-title">🏆 Top Kunden (Revenue)</h2>
+            {% if top_customers %}
+            <table class="st-table">
+                <thead>
+                    <tr>
+                        <th>Kunde</th>
+                        <th>Umsatz</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in top_customers %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div class="customer-score {% if customer.score >= 80 %}score-high{% elif customer.score >= 50 %}score-medium{% else %}score-low{% endif %}">
+                                    {{ customer.customer.first_name[0] }}{{ customer.customer.last_name[0] }}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600;">{{ customer.customer.full_name }}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ customer.customer.company or 'Privatkunde' }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="font-weight: 700; color: var(--success-color);">€{{ "{:,.2f}".format(customer.total_revenue) }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div class="st-progress" style="flex: 1;">
+                                    <div class="st-progress-bar" style="width: {{ customer.score }}%; background-color: {% if customer.score >= 80 %}var(--success-color){% elif customer.score >= 50 %}var(--warning-color){% else %}var(--danger-color){% endif %};"></div>
+                                </div>
+                                <span style="font-size: 0.875rem; font-weight: 600;">{{ customer.score }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Keine Kundendaten vorhanden</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- TAB 3: Sales Pipeline -->
+    <div id="content-sales" class="tab-content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <!-- Sales Pipeline -->
+            <div class="st-section">
+                <h2 class="st-section-title">📊 Sales Pipeline</h2>
+                <div style="margin-top: 1rem;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 600;">🔵 Offen</span>
+                            <span style="font-weight: 700;">{{ pipeline.Offen }} Orders · €{{ "{:,.0f}".format(pipeline_revenue.Offen) }}</span>
+                        </div>
+                        <div class="st-progress">
+                            <div class="st-progress-bar" style="width: {{ (pipeline.Offen / (pipeline.Offen + pipeline['In Bearbeitung'] + pipeline.Bezahlt) * 100) if (pipeline.Offen + pipeline['In Bearbeitung'] + pipeline.Bezahlt) > 0 else 0 }}%; background-color: #4facfe;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 600;">🟡 In Bearbeitung</span>
+                            <span style="font-weight: 700;">{{ pipeline['In Bearbeitung'] }} Orders · €{{ "{:,.0f}".format(pipeline_revenue['In Bearbeitung']) }}</span>
+                        </div>
+                        <div class="st-progress">
+                            <div class="st-progress-bar" style="width: {{ (pipeline['In Bearbeitung'] / (pipeline.Offen + pipeline['In Bearbeitung'] + pipeline.Bezahlt) * 100) if (pipeline.Offen + pipeline['In Bearbeitung'] + pipeline.Bezahlt) > 0 else 0 }}%; background-color: #ffa421;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 600;">🟢 Bezahlt</span>
+                            <span style="font-weight: 700;">{{ pipeline.Bezahlt }} Orders · €{{ "{:,.0f}".format(pipeline_revenue.Bezahlt) }}</span>
+                        </div>
+                        <div class="st-progress">
+                            <div class="st-progress-bar" style="width: {{ (pipeline.Bezahlt / (pipeline.Offen + pipeline['In Bearbeitung'] + pipeline.Bezahlt) * 100) if (pipeline.Offen + pipeline['In Bearbeitung'] + pipeline.Bezahlt) > 0 else 0 }}%; background-color: #09ab3b;"></div>
+                        </div>
+                    </div>
+                    <div style="border-top: 2px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 700; font-size: 1.125rem;">Total Pipeline Value</span>
+                            <span style="font-weight: 700; font-size: 1.5rem; color: var(--success-color);">€{{ "{:,.2f}".format(pipeline_revenue.Offen + pipeline_revenue['In Bearbeitung'] + pipeline_revenue.Bezahlt) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue Forecast -->
+            <div class="st-section">
+                <h2 class="st-section-title">🔮 Revenue Forecast</h2>
+                <div style="text-align: center; padding: 2rem 1rem;">
+                    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">Prognose für nächsten Monat</div>
+                    <div style="font-size: 3rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">€{{ "{:,.0f}".format(forecast_next_month) }}</div>
+                    <div style="font-size: 1.125rem; font-weight: 600; margin-bottom: 2rem;">
+                        <span style="color: {% if growth_rate > 0 %}var(--success-color){% else %}var(--danger-color){% endif %};">
+                            {% if growth_rate > 0 %}↑{% else %}↓{% endif %} {{ "%.1f"|format(growth_rate|abs) }}%
+                        </span>
+                        <span style="color: var(--text-secondary); font-size: 0.875rem;"> vs. letzter Monat</span>
+                    </div>
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 1.5rem; text-align: left;">
+                        <div style="font-weight: 700; margin-bottom: 1rem; color: var(--text-primary);">📈 Trend-Analyse</div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.8;">
+                            {% if growth_rate > 10 %}
+                            🚀 <strong>Starkes Wachstum!</strong> Der Umsatz steigt deutlich. Optimale Zeit für Expansion.
+                            {% elif growth_rate > 0 %}
+                            📊 <strong>Positiver Trend.</strong> Der Umsatz wächst stetig.
+                            {% elif growth_rate > -10 %}
+                            ⚠️ <strong>Leichter Rückgang.</strong> Fokus auf Reaktivierung empfohlen.
+                            {% else %}
+                            🔴 <strong>Kritischer Trend.</strong> Sofortige Maßnahmen notwendig!
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Orders -->
+        <div class="st-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 class="st-section-title" style="margin: 0; border: none; padding: 0;">📦 Alle Bestellungen</h2>
+                <a href="{{ url_for('orders.list') }}" class="st-button st-button-secondary">Alle anzeigen →</a>
+            </div>
+            {% if recent_orders %}
+            <table class="st-table">
+                <thead>
+                    <tr>
+                        <th>Bestellnr.</th>
+                        <th>Kunde</th>
+                        <th>Datum</th>
+                        <th>Betrag</th>
+                        <th>Status</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td style="font-weight: 600; color: var(--primary-color);">{{ order.order_number }}</td>
+                        <td>{{ order.customer.full_name }}</td>
+                        <td>{{ order.order_date.strftime('%d.%m.%Y') }}</td>
+                        <td style="font-weight: 700;">€{{ "{:,.2f}".format(order.total_amount) }}</td>
+                        <td>
+                            <span class="st-badge st-badge-{% if order.status == 'Bezahlt' %}success{% elif order.status == 'Offen' %}warning{% elif order.status == 'Storniert' %}danger{% else %}info{% endif %}">
+                                {{ order.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('orders.detail', id=order.id) }}" class="st-button st-button-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Details</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Keine Bestellungen vorhanden</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- TAB 4: Analytics -->
+    <div id="content-analytics" class="tab-content">
+        <div class="st-section">
+            <h2 class="st-section-title">📊 Channel Performance</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+                {% for channel, count in channel_counts.items() %}
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">
+                        {% if channel == 'Telefon' %}📞
+                        {% elif channel == 'E-Mail' %}📧
+                        {% elif channel == 'Meeting' %}🤝
+                        {% elif channel == 'Chat' %}💬
+                        {% endif %}
+                    </div>
+                    <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">{{ channel }}</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--primary-color);">{{ count }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Interaktionen</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="st-alert st-alert-success">
+            <strong>💡 Tipp:</strong> Weitere Analytics-Features kommen bald! Exportiere deine Daten für detaillierte Analysen.
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active from all buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById('content-' + tabName).classList.add('active');
+    document.getElementById('tab-' + tabName).classList.add('active');
+}
+</script>
+{% endblock %}

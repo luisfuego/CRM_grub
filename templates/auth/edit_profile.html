@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Profil bearbeiten - CRM System{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('auth.profile') }}">Mein Profil</a></li>
+                <li class="breadcrumb-item active">Bearbeiten</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h4 class="mb-0"><i class="bi bi-pencil"></i> Profil bearbeiten</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" name="name" value="{{ current_user.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">E-Mail</label>
+                        <input type="email" class="form-control" value="{{ current_user.email }}" disabled>
+                        <small class="text-muted">E-Mail kann nicht geändert werden</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6 class="mb-3">Passwort ändern (optional)</h6>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Neues Passwort</label>
+                        <input type="password" class="form-control" name="new_password" minlength="6">
+                        <small class="text-muted">Mindestens 6 Zeichen. Leer lassen um Passwort nicht zu ändern.</small>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Speichern
+                        </button>
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">
+                            Abbrechen
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Suchergebnisse - CRM System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-search"></i> Suchergebnisse für "{{ query }}"</h1>
+        <p class="text-muted">{{ total_results }} Ergebnisse gefunden</p>
+    </div>
+</div>
+
+{% if customers %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-people"></i> Kunden ({{ customers|length }})</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Firma</th>
+                    <th>E-Mail</th>
+                    <th>Telefon</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td>{{ customer.full_name }}</td>
+                    <td>{{ customer.company or '-' }}</td>
+                    <td>{{ customer.email or '-' }}</td>
+                    <td>{{ customer.phone or '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('customers.detail', id=customer.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if orders %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-cart"></i> Bestellungen ({{ orders|length }})</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Bestellnummer</th>
+                    <th>Kunde</th>
+                    <th>Datum</th>
+                    <th>Status</th>
+                    <th>Betrag</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>{{ order.order_number }}</td>
+                    <td>{{ order.customer.full_name }}</td>
+                    <td>{{ order.order_date.strftime('%d.%m.%Y') }}</td>
+                    <td>
+                        <span class="badge {% if order.status == 'Bezahlt' %}bg-success{% elif order.status == 'Offen' %}bg-warning{% else %}bg-secondary{% endif %}">
+                            {{ order.status }}
+                        </span>
+                    </td>
+                    <td>{{ '%.2f'|format(order.total_amount) }} €</td>
+                    <td>
+                        <a href="{{ url_for('orders.detail', id=order.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if contacts %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Interaktionen ({{ contacts|length }})</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Datum</th>
+                    <th>Kunde</th>
+                    <th>Kanal</th>
+                    <th>Betreff</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in contacts %}
+                <tr>
+                    <td>{{ contact.contact_time.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td>{{ contact.customer.full_name }}</td>
+                    <td>{{ contact.channel }}</td>
+                    <td>{{ contact.subject or '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('contacts.detail', id=contact.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if not customers and not orders and not contacts %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Keine Ergebnisse für "{{ query }}" gefunden.
+</div>
+{% endif %}
+
+<a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i> Zurück zum Dashboard
+</a>
+{% endblock %}

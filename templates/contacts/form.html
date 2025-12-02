@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Kontakt erfassen{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('contacts.list') }}">Interaktionen</a></li>
+                <li class="breadcrumb-item active">{% if contact %}Bearbeiten{% else %}Neu{% endif %}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h3 class="mb-0">
+            {% if contact %}
+                <i class="bi bi-pencil"></i> Kontakt bearbeiten
+            {% else %}
+                <i class="bi bi-plus-circle"></i> Neuer Kontakt
+            {% endif %}
+        </h3>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Kunde *</label>
+                    <select class="form-select" name="customer_id" required {% if contact %}disabled{% endif %}>
+                        <option value="">Bitte wählen...</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" 
+                                {% if selected_customer and customer.id == selected_customer.id %}selected{% endif %}
+                                {% if contact and customer.id == contact.customer_id %}selected{% endif %}>
+                            {{ customer.display_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if contact %}
+                    <input type="hidden" name="customer_id" value="{{ contact.customer_id }}">
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Kanal *</label>
+                    <select class="form-select" name="channel" required>
+                        <option value="">Bitte wählen...</option>
+                        <option value="Telefon" {% if contact and contact.channel=='Telefon' %}selected{% endif %}>📞 Telefon</option>
+                        <option value="E-Mail" {% if contact and contact.channel=='E-Mail' %}selected{% endif %}>📧 E-Mail</option>
+                        <option value="Meeting" {% if contact and contact.channel=='Meeting' %}selected{% endif %}>👥 Meeting</option>
+                        <option value="Chat" {% if contact and contact.channel=='Chat' %}selected{% endif %}>💬 Chat</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-8">
+                    <label class="form-label">Betreff</label>
+                    <input type="text" class="form-control" name="subject" 
+                           value="{{ contact.subject if contact else '' }}">
+                </div>
+                
+                <div class="col-md-4">
+                    <label class="form-label">Dauer (Minuten)</label>
+                    <input type="number" class="form-control" name="duration_minutes" 
+                           value="{{ contact.duration_minutes if contact else '' }}">
+                </div>
+                
+                <div class="col-12">
+                    <label class="form-label">Notizen</label>
+                    <textarea class="form-control" name="notes" rows="4">{{ contact.notes if contact else '' }}</textarea>
+                </div>
+                
+                {% if current_user.is_chef() %}
+                <div class="col-md-6">
+                    <label class="form-label">Kundenbewertung (nur für Chef sichtbar)</label>
+                    <select class="form-select" name="rating">
+                        <option value="">Keine Bewertung</option>
+                        <option value="1" {% if contact and contact.rating==1 %}selected{% endif %}>⭐ 1 - Schlecht</option>
+                        <option value="2" {% if contact and contact.rating==2 %}selected{% endif %}>⭐⭐ 2 - Befriedigend</option>
+                        <option value="3" {% if contact and contact.rating==3 %}selected{% endif %}>⭐⭐⭐ 3 - Gut</option>
+                        <option value="4" {% if contact and contact.rating==4 %}selected{% endif %}>⭐⭐⭐⭐ 4 - Sehr gut</option>
+                        <option value="5" {% if contact and contact.rating==5 %}selected{% endif %}>⭐⭐⭐⭐⭐ 5 - Ausgezeichnet</option>
+                    </select>
+                </div>
+                {% endif %}
+                
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Speichern
+                    </button>
+                    <a href="{% if contact %}{{ url_for('customers.detail', id=contact.customer_id) }}{% else %}{{ url_for('contacts.list') }}{% endif %}" 
+                       class="btn btn-outline-secondary">
+                        Abbrechen
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

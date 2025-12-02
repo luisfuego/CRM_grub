@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Kontakt Details{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('contacts.list') }}">Interaktionen</a></li>
+                <li class="breadcrumb-item active">Details</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">
+                {% if contact.channel == 'Telefon' %}
+                    <i class="bi bi-telephone text-primary"></i>
+                {% elif contact.channel == 'E-Mail' %}
+                    <i class="bi bi-envelope text-info"></i>
+                {% elif contact.channel == 'Meeting' %}
+                    <i class="bi bi-people text-success"></i>
+                {% else %}
+                    <i class="bi bi-chat text-secondary"></i>
+                {% endif %}
+                {{ contact.channel }}: {{ contact.subject or '(ohne Betreff)' }}
+            </h3>
+            <div>
+                <a href="{{ url_for('contacts.edit', id=contact.id) }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Bearbeiten
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Kunde:</dt>
+            <dd class="col-sm-9">
+                <a href="{{ url_for('customers.detail', id=contact.customer.id) }}">
+                    {{ contact.customer.full_name }}
+                </a>
+            </dd>
+            
+            <dt class="col-sm-3">Datum/Zeit:</dt>
+            <dd class="col-sm-9">{{ format_datetime(contact.contact_time) }}</dd>
+            
+            <dt class="col-sm-3">Mitarbeiter:</dt>
+            <dd class="col-sm-9">{{ contact.user.name if contact.user else '—' }}</dd>
+            
+            <dt class="col-sm-3">Dauer:</dt>
+            <dd class="col-sm-9">{{ contact.duration_minutes }} Minuten</dd>
+            
+            {% if contact.rating and current_user.is_chef() %}
+            <dt class="col-sm-3">Bewertung:</dt>
+            <dd class="col-sm-9">
+                <span class="text-warning">
+                    {% for i in range(contact.rating) %}★{% endfor %}
+                </span>
+                ({{ contact.rating }}/5)
+            </dd>
+            {% endif %}
+            
+            <dt class="col-sm-3">Notizen:</dt>
+            <dd class="col-sm-9">{{ contact.notes or '—' }}</dd>
+        </dl>
+    </div>
+</div>
+{% endblock %}

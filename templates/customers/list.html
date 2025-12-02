@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Kunden - CRM System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-people"></i> Kundenliste</h1>
+    </div>
+    <div class="col text-end">
+        <a href="{{ url_for('customers.new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Neuer Kunde
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="get" class="mb-3">
+            <div class="input-group">
+                <input type="text" class="form-control" name="q" placeholder="Suche nach Name, E-Mail, Firma, Stadt..." value="{{ search }}">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i> Suchen
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Firma</th>
+                        <th>Kontakt</th>
+                        <th>Stadt</th>
+                        <th>Bestellungen</th>
+                        <th class="text-end">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in pagination.items %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('customers.detail', id=customer.id) }}" class="fw-semibold">
+                                {{ customer.full_name }}
+                            </a>
+                        </td>
+                        <td>{{ customer.company or '—' }}</td>
+                        <td class="small">
+                            {{ customer.email or '—' }}<br>
+                            {{ customer.phone or '—' }}
+                        </td>
+                        <td>{{ customer.city or '—' }}</td>
+                        <td>{{ customer.orders.count() }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('customers.detail', id=customer.id) }}" class="btn btn-sm btn-primary">Details</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">Keine Kunden gefunden</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pagination.pages > 1 %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('customers.list', page=pagination.prev_num, q=search) }}">Zurück</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('customers.list', page=page_num, q=search) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('customers.list', page=pagination.next_num, q=search) }}">Weiter</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

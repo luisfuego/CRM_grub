@@ -13,7 +13,6 @@ if project_home not in sys.path:
 # Environment Variables
 os.environ['FLASK_ENV'] = 'production'
 os.environ['SECRET_KEY'] = 'aendere-diesen-schluessel-fuer-produktion'
-os.environ['DATABASE_URL'] = 'sqlite:///crm.db'
 
 # Flask App importieren
 from app import create_app
